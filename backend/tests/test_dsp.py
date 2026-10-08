@@ -123,3 +123,19 @@ def test_extract_event_windows_clips_at_signal_edges():
 
     assert len(windows) == 1
     assert windows[0][0] == stream[0]  # window starts at the very first sample
+
+def test_energy_detector_handles_dc_offset():
+    # Raw ADC captures sit around mid-scale, not zero; detection must not change
+    rng = np.random.default_rng(5)
+    noise = rng.normal(0, 0.05, 2000)
+    burst = _tone([(480, 0.2)], duration=0.05)
+    centred = np.concatenate([noise[:1000], burst, noise[1000:]])
+
+    results = []
+    for offset in (0.0, 0.5):
+        detector = EnergyDetector(threshold_multiplier=3.5, min_event_length=100)
+        detector.calibrate(centred[:800] + offset)
+        results.append(detector.detect_events(centred + offset))
+
+    assert len(results[0]) == 1
+    assert results[0] == results[1]

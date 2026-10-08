@@ -31,3 +31,6 @@ temp/
 *.db
 *.sqlite3
 backend/models/*.joblib
+
+# Firmware secrets (Wi-Fi password, backend address)
+firmware/**/config.h

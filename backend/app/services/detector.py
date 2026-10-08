@@ -12,11 +12,15 @@ class EnergyDetector:
     The signal is converted to a short-time RMS envelope (a sliding window of
     `frame_size` samples), so a single wingbeat is not split apart every time the
     waveform crosses zero. Both the envelope and the threshold are in amplitude units.
+
+    The DC level of the calibration noise is subtracted before measuring energy, so
+    raw ADC captures (centred around mid-scale rather than zero) work unchanged.
     """
     def __init__(self, threshold_multiplier: float = 3.5, min_event_length: int = 100, frame_size: int = 16):
         self.threshold_multiplier = threshold_multiplier
         self.min_event_length = min_event_length
         self.frame_size = frame_size
+        self.dc_offset = 0.0
         self.baseline_rms = None
         self.mad = None
 
@@ -32,7 +36,8 @@ class EnergyDetector:
         """
         Calibrates the detector's baseline against a sample of pure ambient noise.
         """
-        envelope = self.rms_envelope(background_signal)
+        self.dc_offset = float(np.median(background_signal))
+        envelope = self.rms_envelope(background_signal - self.dc_offset)
         self.baseline_rms = float(np.median(envelope))
         self.mad = float(MAD_TO_SIGMA * np.median(np.abs(envelope - self.baseline_rms)))
 
@@ -49,7 +54,7 @@ class EnergyDetector:
         """
         threshold = self.threshold
 
-        envelope = self.rms_envelope(signal)
+        envelope = self.rms_envelope(signal - self.dc_offset)
 
         # Find indices where the envelope exceeds the robust threshold
         above_threshold = np.where(envelope > threshold)[0]
