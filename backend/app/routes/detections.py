@@ -13,13 +13,7 @@ def create_detection(detection: DetectionCreate, db: Session = Depends(get_db)):
     """
     Ingest a new detection event from a sensing node.
     """
-    db_event = DetectionEvent(
-        latitude=detection.latitude,
-        longitude=detection.longitude,
-        rms=detection.rms,
-        dominant_freq_hz=detection.dominant_freq_hz,
-        peak_magnitude=detection.peak_magnitude
-    )
+    db_event = DetectionEvent(**detection.model_dump())
     db.add(db_event)
     db.commit()
     db.refresh(db_event)
