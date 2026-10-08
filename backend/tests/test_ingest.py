@@ -61,3 +61,22 @@ def test_waveform_ingest_rejects_too_short_and_too_long():
     # Default max_recording_seconds is 10
     too_long = [0.0] * (11 * SAMPLE_RATE)
     assert client.post("/api/ingest/waveform", json={**base, "samples": too_long}).status_code == 422
+
+class _StubClassifier:
+    def classify(self, features):
+        return ("AEDES", 0.91) if features["dominant_freq_hz"] > 0 else ("UNKNOWN", None)
+
+def test_detections_are_classified_on_ingest(monkeypatch):
+    monkeypatch.setattr("app.services.ingestion.get_classifier", lambda: _StubClassifier())
+
+    response = client.post("/api/detections/", json={
+        "latitude": 13.0, "longitude": 80.2, "rms": 0.3, "dominant_freq_hz": 480.0, "peak_magnitude": 0.2,
+    })
+    assert response.json()["species_class"] == "AEDES"
+    assert response.json()["confidence"] == 0.91
+
+    samples, truth = _stream_with_quiet_start(["AEDES"], seed=23, duration_sec=1.0)
+    body = client.post("/api/ingest/waveform", json={
+        "latitude": 13.0, "longitude": 80.2, "sample_rate": SAMPLE_RATE, "samples": samples.tolist(),
+    }).json()
+    assert [d["species_class"] for d in body["detections"]] == ["AEDES"]

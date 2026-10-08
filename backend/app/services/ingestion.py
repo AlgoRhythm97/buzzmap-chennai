@@ -1,17 +1,28 @@
 import numpy as np
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional, Tuple
 
 from ..config import settings
 from ..models import DetectionEvent, SensorNode
 from ..schemas import DetectionCreate, WaveformIngest
+from .classifier import UNKNOWN, get_classifier
 from .detector import EnergyDetector
 from .dsp import process_waveform
 
+def classify_features(features: dict) -> Tuple[str, Optional[float]]:
+    """
+    Runs the species classifier on a feature dict. Without a trained model
+    every detection stays UNKNOWN.
+    """
+    classifier = get_classifier()
+    if classifier is None:
+        return UNKNOWN, None
+    return classifier.classify(features)
+
 def store_detection(db: Session, detection: DetectionCreate, commit: bool = True) -> DetectionEvent:
     """
-    Persists one detection. When `node_id` is given the node must be registered;
+    Classifies and persists one detection. When `node_id` is given the node must be registered;
     its coordinates fill in any missing latitude/longitude and its `last_seen_at` is refreshed.
     """
     data = detection.model_dump()
@@ -27,6 +38,8 @@ def store_detection(db: Session, detection: DetectionCreate, commit: bool = True
         if data["latitude"] is None:
             data["latitude"] = node.latitude
             data["longitude"] = node.longitude
+
+    data["species_class"], data["confidence"] = classify_features(data)
 
     db_event = DetectionEvent(**data)
     db.add(db_event)

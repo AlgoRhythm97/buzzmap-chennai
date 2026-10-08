@@ -131,3 +131,26 @@ def generate_stream(
         truth.append(GroundTruthEvent(species, fund_freq, start, start + len(event) - 1))
 
     return stream, truth
+
+def generate_capture(
+    species_sequence: List[str],
+    duration_sec: float = 1.5,
+    pretrigger_sec: float = 0.1,
+    sample_rate: int = 16000,
+    noise_std: float = 0.05,
+    rng: Optional[np.random.Generator] = None,
+) -> Tuple[np.ndarray, List[GroundTruthEvent]]:
+    """
+    Simulates what a node uploads to /api/ingest/waveform: `pretrigger_sec` of
+    noise-only baseline (for detector calibration) followed by a stream with events.
+    Ground-truth indices are shifted to match the returned capture.
+    """
+    rng = rng if rng is not None else np.random.default_rng()
+    pretrigger = rng.normal(0, noise_std, int(pretrigger_sec * sample_rate))
+    stream, truth = generate_stream(species_sequence, duration_sec, sample_rate, noise_std, rng)
+    offset = len(pretrigger)
+    shifted = [
+        GroundTruthEvent(t.species, t.fund_freq_hz, t.start_idx + offset, t.end_idx + offset)
+        for t in truth
+    ]
+    return np.concatenate([pretrigger, stream]), shifted
