@@ -1,13 +1,17 @@
 import { parseApiDate } from '../api/client';
 import type { SensorNode, SpeciesClass } from '../api/types';
 
+// Fixed categorical order, validated for colour-vision deficiency and contrast
+// against the dark card surface (#1a1a1a). Colour follows the species, never its rank.
 export const SPECIES: Record<SpeciesClass, { label: string; color: string }> = {
-  AEDES: { label: 'Aedes', color: '#ffb300' },
-  CULEX: { label: 'Culex', color: '#2979ff' },
-  ANOPHELES: { label: 'Anopheles', color: '#7c4dff' },
-  NON_MOSQUITO: { label: 'Non-mosquito', color: '#26a69a' },
-  UNKNOWN: { label: 'Unknown', color: '#9e9e9e' },
+  AEDES: { label: 'Aedes', color: '#3987e5' },
+  CULEX: { label: 'Culex', color: '#d95926' },
+  ANOPHELES: { label: 'Anopheles', color: '#199e70' },
+  NON_MOSQUITO: { label: 'Non-mosquito', color: '#c98500' },
+  UNKNOWN: { label: 'Unknown', color: '#d55181' },
 };
+
+export const MOSQUITO_SPECIES: SpeciesClass[] = ['AEDES', 'CULEX', 'ANOPHELES'];
 
 export const SPECIES_ORDER: SpeciesClass[] = ['AEDES', 'CULEX', 'ANOPHELES', 'NON_MOSQUITO', 'UNKNOWN'];
 

@@ -84,9 +84,11 @@ export default function MapPage() {
 
       <div className="card-border overflow-hidden h-[65vh] min-h-96">
         <MapContainer center={CHENNAI_CENTER} zoom={11} className="h-full w-full" scrollWheelZoom>
+          {/* Standard OSM tiles (no API key), darkened via the .map-tiles-dark CSS filter */}
           <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+            className="map-tiles-dark"
           />
           {data?.nodes.map((node) => {
             const nodeActivity = activity.get(node.id);

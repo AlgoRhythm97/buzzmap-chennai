@@ -16,6 +16,11 @@
       linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
   }
 
+  /* Dark basemap from standard OSM tiles; markers and popups are unaffected */
+  .map-tiles-dark {
+    filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9) saturate(0.6);
+  }
+
   .card-border {
     @apply border border-gray-800 bg-charcoal/80 rounded-lg shadow-lg;
   }
