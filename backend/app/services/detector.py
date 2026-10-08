@@ -68,3 +68,16 @@ class EnergyDetector:
                 events.append((int(start), int(end)))
 
         return events
+
+    def extract_event_windows(self, signal: np.ndarray, padding: int = 64) -> List[np.ndarray]:
+        """
+        Detects flight events and slices each one out of the signal, padded on both
+        sides (clipped at the signal edges) so the onset and decay of the wingbeat
+        are kept for feature extraction.
+        """
+        windows = []
+        for start, end in self.detect_events(signal):
+            lo = max(start - padding, 0)
+            hi = min(end + padding + 1, len(signal))
+            windows.append(signal[lo:hi])
+        return windows

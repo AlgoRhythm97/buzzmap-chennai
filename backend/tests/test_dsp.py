@@ -98,3 +98,28 @@ def test_process_waveform_on_mock_wingbeat():
 
     assert np.isclose(features["dominant_freq_hz"], 600.0, atol=10)
     assert 0.3 < features["harmonic_ratio"] < 0.7
+
+def _calibrated_detector():
+    detector = EnergyDetector(threshold_multiplier=3.5, min_event_length=100)
+    detector.calibrate(np.random.default_rng(2).normal(0, 0.05, 2000))
+    return detector
+
+def test_extract_event_windows_pads_each_event():
+    rng = np.random.default_rng(3)
+    burst = _tone([(600, 0.5)], duration=0.05)  # 800 samples
+    stream = np.concatenate([rng.normal(0, 0.05, 1000), burst, rng.normal(0, 0.05, 1000)])
+
+    windows = _calibrated_detector().extract_event_windows(stream, padding=64)
+
+    assert len(windows) == 1
+    # Roughly the burst length plus 64 samples of padding on each side
+    assert 800 + 2 * 64 - 40 <= len(windows[0]) <= 800 + 2 * 64 + 40
+
+def test_extract_event_windows_clips_at_signal_edges():
+    burst = _tone([(600, 0.5)], duration=0.05)
+    stream = np.concatenate([burst, np.random.default_rng(4).normal(0, 0.05, 1000)])
+
+    windows = _calibrated_detector().extract_event_windows(stream, padding=500)
+
+    assert len(windows) == 1
+    assert windows[0][0] == stream[0]  # window starts at the very first sample
