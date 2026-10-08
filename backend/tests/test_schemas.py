@@ -33,3 +33,15 @@ def test_node_id_format():
     for bad_id in ["chn-adyar-01", "-CHN", "A", "CHN ADYAR"]:
         with pytest.raises(ValidationError):
             SensorNodeCreate(id=bad_id, name="Adyar", latitude=13.0, longitude=80.25)
+
+def test_detection_location_from_node_only():
+    features = {k: v for k, v in VALID_DETECTION.items() if k not in ("latitude", "longitude")}
+    detection = DetectionCreate(**features, node_id="CHN-ADYAR-01")
+    assert detection.latitude is None
+
+def test_detection_requires_some_location():
+    features = {k: v for k, v in VALID_DETECTION.items() if k not in ("latitude", "longitude")}
+    with pytest.raises(ValidationError):
+        DetectionCreate(**features)
+    with pytest.raises(ValidationError):
+        DetectionCreate(**features, latitude=13.0)

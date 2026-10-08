@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from datetime import datetime
 from typing import Annotated, Optional
 
@@ -34,10 +34,11 @@ class SensorNodeResponse(BaseModel):
 class DetectionCreate(BaseModel):
     """
     Schema for validating incoming telemetry from the optical sensors.
+    Coordinates may be omitted when `node_id` is given; the node's location is used.
     """
     node_id: Optional[str] = None
-    latitude: Latitude
-    longitude: Longitude
+    latitude: Optional[Latitude] = None
+    longitude: Optional[Longitude] = None
     rms: float = Field(ge=0)
     # Upper bound is well above any insect wingbeat; rejects corrupted packets
     dominant_freq_hz: float = Field(gt=0, le=5000)
@@ -45,6 +46,14 @@ class DetectionCreate(BaseModel):
     peak_to_peak: Optional[float] = Field(default=None, ge=0)
     harmonic_ratio: Optional[float] = Field(default=None, ge=0)
     spectral_energy: Optional[float] = Field(default=None, ge=0)
+
+    @model_validator(mode="after")
+    def require_location(self):
+        if (self.latitude is None) != (self.longitude is None):
+            raise ValueError("latitude and longitude must be given together")
+        if self.latitude is None and self.node_id is None:
+            raise ValueError("either node_id or latitude/longitude is required")
+        return self
 
 class DetectionResponse(BaseModel):
     """
