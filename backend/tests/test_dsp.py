@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from app.services.dsp import remove_dc_offset, apply_window, extract_features
+from app.services.dsp import remove_dc_offset, apply_window, extract_features, process_waveform
 from app.services.detector import EnergyDetector
 from scripts.mock_sensor import generate_wingbeat
 
@@ -60,3 +60,41 @@ def test_energy_detector_requires_calibration():
     detector = EnergyDetector()
     with pytest.raises(ValueError):
         detector.detect_events(np.zeros(100))
+
+def _tone(freqs_amps, sample_rate=16000, duration=0.1):
+    t = np.arange(int(sample_rate * duration)) / sample_rate
+    return sum(a * np.sin(2 * np.pi * f * t) for f, a in freqs_amps)
+
+def test_extract_features_amplitude_and_harmonics():
+    signal = _tone([(600, 0.5), (1200, 0.25)])
+    features = extract_features(signal, 16000)
+
+    assert np.isclose(features["dominant_freq_hz"], 600.0)
+    assert np.isclose(features["harmonic_ratio"], 0.5, atol=0.01)
+    assert 1.0 < features["peak_to_peak"] < 1.6
+    assert features["spectral_energy"] > 0
+
+def test_extract_features_band_limits_dominant_frequency():
+    # Strong 50 Hz mains hum must not be reported as the wingbeat
+    signal = _tone([(50, 2.0), (600, 0.5)])
+
+    assert np.isclose(extract_features(signal, 16000)["dominant_freq_hz"], 50.0)
+    banded = extract_features(signal, 16000, band_low_hz=200, band_high_hz=1500)
+    assert np.isclose(banded["dominant_freq_hz"], 600.0)
+
+def test_process_waveform_removes_dc_and_keeps_true_rms():
+    signal = _tone([(600, 0.5)]) + 3.0
+    features = process_waveform(signal, 16000)
+
+    assert np.isclose(features["dominant_freq_hz"], 600.0)
+    # RMS of a 0.5-amplitude sine is 0.5/sqrt(2), unaffected by DC or windowing
+    assert np.isclose(features["rms"], 0.5 / np.sqrt(2), rtol=0.01)
+    assert np.isclose(features["peak_to_peak"], 1.0, atol=0.01)
+
+def test_process_waveform_on_mock_wingbeat():
+    np.random.seed(0)
+    signal = generate_wingbeat(fund_freq=600.0)
+    features = process_waveform(signal, 16000, band_low_hz=200, band_high_hz=1500)
+
+    assert np.isclose(features["dominant_freq_hz"], 600.0, atol=10)
+    assert 0.3 < features["harmonic_ratio"] < 0.7
