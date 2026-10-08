@@ -1,3 +1,4 @@
+import { Suspense, lazy } from 'react';
 import { CircleMarker, MapContainer, TileLayer } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Link, useParams } from 'react-router-dom';
@@ -6,6 +7,10 @@ import type { Detection } from '../api/types';
 import SpeciesBadge from '../components/SpeciesBadge';
 import { usePolling } from '../hooks/usePolling';
 import { SPECIES } from '../lib/display';
+import { MODEL_FOR_CLASS, SPECIMENS } from '../three/speciesModels';
+
+// Three.js is only downloaded when the detection is a mosquito with a 3D model
+const MosquitoViewer = lazy(() => import('../components/MosquitoViewer'));
 
 async function fetchResult(id: string, signal: AbortSignal) {
   const detection = await api.getDetection(id, signal);
@@ -122,6 +127,36 @@ export default function Result() {
           </div>
         </div>
       </div>
+
+      <SpecimenModel detection={d} />
+    </div>
+  );
+}
+
+/** Representative 3D specimen for mosquito classes; nothing for non-mosquito or unknown events. */
+function SpecimenModel({ detection }: { detection: Detection }) {
+  const modelId = MODEL_FOR_CLASS[detection.species_class];
+  const specimen = SPECIMENS.find((s) => s.id === modelId);
+  if (!specimen) return null;
+
+  return (
+    <div className="card-border overflow-hidden">
+      <div className="flex flex-wrap items-baseline justify-between gap-2 p-4 pb-0">
+        <div>
+          <h2 className="text-sm font-semibold text-gray-200">
+            Representative specimen: <span className="italic">{specimen.label}</span>
+          </h2>
+          <p className="text-xs text-gray-500">
+            The sensor identifies the genus from its wingbeat; this model shows a typical member. Transmits: {specimen.diseases}.
+          </p>
+        </div>
+        <Link to={`/species?model=${specimen.id}`} className="text-sm text-accent-primary hover:underline">
+          Explore all species →
+        </Link>
+      </div>
+      <Suspense fallback={<div className="h-80" />}>
+        <MosquitoViewer species={specimen.id} quality="low" autoRotate className="h-80" />
+      </Suspense>
     </div>
   );
 }

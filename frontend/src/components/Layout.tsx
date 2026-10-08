@@ -16,6 +16,7 @@ export default function Layout() {
                 <Link to="/sense" className="hover:text-accent-primary px-3 py-2 rounded-md text-sm font-medium transition-colors">Sense</Link>
                 <Link to="/map" className="hover:text-accent-primary px-3 py-2 rounded-md text-sm font-medium transition-colors">Map</Link>
                 <Link to="/insights" className="hover:text-accent-primary px-3 py-2 rounded-md text-sm font-medium transition-colors">Insights</Link>
+                <Link to="/species" className="hover:text-accent-primary px-3 py-2 rounded-md text-sm font-medium transition-colors">Species</Link>
                 <Link to="/science" className="hover:text-accent-primary px-3 py-2 rounded-md text-sm font-medium transition-colors">Science</Link>
                 <Link to="/about" className="hover:text-accent-primary px-3 py-2 rounded-md text-sm font-medium transition-colors">About</Link>
               </div>

@@ -10,6 +10,8 @@ import About from './pages/About';
 const MapPage = lazy(() => import('./pages/MapPage'));
 const Insights = lazy(() => import('./pages/Insights'));
 const Result = lazy(() => import('./pages/Result'));
+// Three.js mosquito models; split out so other pages never download them
+const Species = lazy(() => import('./pages/Species'));
 
 function App() {
   return (
@@ -20,6 +22,7 @@ function App() {
           <Route path="sense" element={<Sense />} />
           <Route path="map" element={<MapPage />} />
           <Route path="insights" element={<Insights />} />
+          <Route path="species" element={<Species />} />
           <Route path="science" element={<Science />} />
           <Route path="about" element={<About />} />
           <Route path="result/:id" element={<Result />} />

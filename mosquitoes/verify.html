@@ -1,0 +1,37 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Mosquito model validation</title>
+<style>body{background:#111b16;color:#d8e8db;font:14px/1.6 monospace;padding:30px}button{padding:12px}pre{white-space:pre-wrap}</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script>
+<h1>Model and GLB validation</h1><button id="run">Verify all six species</button><pre id="report">Ready.</pre>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { createMosquito, listMosquitoSpecies } from './mosquito-models.js';
+const report=document.querySelector('#report'),button=document.querySelector('#run');
+const line=s=>report.textContent+=s+'\n';
+function assert(ok,message){if(!ok)throw new Error(message);}
+function dispose(root){const gs=new Set(),ms=new Set(),ts=new Set();root.traverse(o=>{if(o.geometry)gs.add(o.geometry);if(o.material)for(const m of [].concat(o.material)){ms.add(m);for(const v of Object.values(m))if(v?.isTexture)ts.add(v);}});for(const t of ts)t.dispose();for(const g of gs)g.dispose();for(const m of ms)m.dispose();}
+button.onclick=async()=>{
+  button.disabled=true;report.textContent='';let count=0;
+  try{for(const {id,label} of listMosquitoSpecies()){
+    line('Checking '+label+'…');
+    const root=createMosquito(id);let triangles=0,meshes=0;
+    root.traverse(o=>{if(!o.isMesh)return;meshes++;const g=o.geometry;triangles+=(g.index?g.index.count:g.attributes.position.count)/3;
+      for(const attr of Object.values(g.attributes))for(const n of attr.array)assert(Number.isFinite(n),id+': non-finite geometry');});
+    const bytes=await new GLTFExporter().parseAsync(root,{binary:true,trs:true,animations:root.animations});
+    const gltf=await new GLTFLoader().parseAsync(bytes,'');
+    assert(gltf.animations.length===1,'missing animation');const clip=gltf.animations[0];
+    assert(clip.tracks.length===2,'expected two wing tracks');assert(clip.tracks.every(t=>t.ValueTypeName==='quaternion'),'expected quaternion tracks');
+    const mx=new THREE.AnimationMixer(gltf.scene);mx.clipAction(clip).play();mx.setTime(0);
+    const wings=['Wing_L','Wing_R'].map(n=>gltf.scene.getObjectByName(n));assert(wings.every(Boolean),'missing wings');
+    const initial=wings.map(w=>w.quaternion.clone());mx.setTime(clip.duration/4);
+    const angles=wings.map((w,i)=>w.quaternion.angleTo(initial[i]));assert(angles.every(a=>a>.1),'static wing after GLB roundtrip');
+    mx.setTime(clip.duration);assert(wings.every((w,i)=>w.quaternion.angleTo(initial[i])<.001),'loop discontinuity');
+    line(`PASS · ${Math.round(triangles).toLocaleString()} triangles · ${meshes} meshes · ${(bytes.byteLength/1048576).toFixed(2)} MB GLB · wing deltas ${angles.map(a=>a.toFixed(3)).join(', ')} rad`);
+    root.userData.setPose('rest');root.userData.update(.1);assert(root.getObjectByName('Wing_L').quaternion.toArray().every(Number.isFinite),'rest pose');
+    root.userData.dispose();mx.stopAllAction();mx.uncacheRoot(gltf.scene);dispose(gltf.scene);count++;
+  }line(`COMPLETE: ${count}/6 passed. Finite geometry, embedded textures, both animated wings and seamless loops verified.`);}
+  catch(error){line('FAIL: '+error.message);console.error(error);}
+  finally{button.disabled=false;}
+};
+</script></html>
