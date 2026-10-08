@@ -7,7 +7,7 @@ from typing import List, Optional
 
 from ..database import get_db
 from ..models import DetectionEvent, SensorNode
-from ..schemas import StatsSummary, TimeseriesBucket
+from ..schemas import NodeActivity, StatsSummary, TimeseriesBucket
 from ..timeutils import utc_now
 
 router = APIRouter(prefix="/api/stats", tags=["stats"])
@@ -84,3 +84,34 @@ def get_timeseries(
         )
         for i in range(n_buckets)
     ]
+
+@router.get("/nodes", response_model=List[NodeActivity])
+def get_node_activity(
+    window_hours: int = Query(24, ge=1, le=24 * 30),
+    db: Session = Depends(get_db),
+):
+    """
+    Per-node detection counts by species over the window. Nodes with no detections
+    in the window are omitted.
+    """
+    rows = (
+        db.query(
+            DetectionEvent.node_id,
+            DetectionEvent.species_class,
+            func.count(),
+            func.max(DetectionEvent.timestamp),
+        )
+        .filter(DetectionEvent.timestamp >= utc_now() - timedelta(hours=window_hours))
+        .filter(DetectionEvent.node_id.isnot(None))
+        .group_by(DetectionEvent.node_id, DetectionEvent.species_class)
+        .all()
+    )
+
+    activity = {}
+    for node_id, species, count, last_seen in rows:
+        entry = activity.setdefault(node_id, {"node_id": node_id, "total": 0, "by_species": {}, "last_detection_at": None})
+        entry["total"] += count
+        entry["by_species"][species] = count
+        if entry["last_detection_at"] is None or last_seen > entry["last_detection_at"]:
+            entry["last_detection_at"] = last_seen
+    return sorted(activity.values(), key=lambda a: a["node_id"])

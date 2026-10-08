@@ -60,3 +60,18 @@ def test_timeseries_buckets_by_hour_and_species():
 def test_timeseries_bucket_count_rounds_up():
     buckets = client.get("/api/stats/timeseries", params={"hours": 1, "bucket_minutes": 25}).json()
     assert len(buckets) == 3  # 60 / 25 rounded up
+
+def test_node_activity_counts_species_in_window():
+    node_id = _node_with_detections([
+        (timedelta(minutes=5), "AEDES"),
+        (timedelta(minutes=6), "AEDES"),
+        (timedelta(minutes=7), "ANOPHELES"),
+        (timedelta(hours=30), "CULEX"),  # outside the 24 h window
+    ])
+    activity = {a["node_id"]: a for a in client.get("/api/stats/nodes").json()}
+
+    assert activity[node_id]["total"] == 3
+    assert activity[node_id]["by_species"] == {"AEDES": 2, "ANOPHELES": 1}
+
+    week = {a["node_id"]: a for a in client.get("/api/stats/nodes", params={"window_hours": 48}).json()}
+    assert week[node_id]["by_species"]["CULEX"] == 1

@@ -121,3 +121,12 @@ class TimeseriesBucket(BaseModel):
     bucket_start: datetime
     total: int
     by_species: Dict[str, int]
+
+class NodeActivity(BaseModel):
+    """
+    Detections at one sensing node over a time window, for the map's place panel.
+    """
+    node_id: str
+    total: int
+    by_species: Dict[str, int]
+    last_detection_at: Optional[datetime] = None
