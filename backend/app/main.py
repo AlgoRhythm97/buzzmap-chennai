@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .config import settings
 from .database import engine, Base
-from .routes import detections, ingest, nodes
+from .routes import detections, ingest, nodes, stats
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -23,6 +23,7 @@ app.add_middleware(
 app.include_router(nodes.router)
 app.include_router(detections.router)
 app.include_router(ingest.router)
+app.include_router(stats.router)
 
 @app.get("/api/health")
 def health_check():

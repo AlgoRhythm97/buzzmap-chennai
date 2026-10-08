@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from datetime import datetime
-from typing import Annotated, List, Optional
+from typing import Annotated, Dict, List, Optional
 
 from .config import settings
 
@@ -101,3 +101,23 @@ class WaveformIngest(LocatedPayload):
 class WaveformIngestResponse(BaseModel):
     events_detected: int
     detections: List[DetectionResponse]
+
+class StatsSummary(BaseModel):
+    """
+    Headline KPIs for the surveillance dashboard.
+    """
+    window_hours: int
+    total_detections: int
+    detections_in_window: int
+    by_species_in_window: Dict[str, int]
+    total_nodes: int
+    active_nodes: int
+    # Active nodes that reported within the last `online_minutes`
+    online_nodes: int
+    online_minutes: int
+    last_detection_at: Optional[datetime] = None
+
+class TimeseriesBucket(BaseModel):
+    bucket_start: datetime
+    total: int
+    by_species: Dict[str, int]
