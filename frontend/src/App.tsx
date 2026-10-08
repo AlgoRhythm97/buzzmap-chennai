@@ -1,17 +1,6 @@
-import { lazy } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Navigate, Route, Routes } from 'react-router-dom';
 import Layout from './components/Layout';
 import Home from './pages/Home';
-import Sense from './pages/Sense';
-import Science from './pages/Science';
-import About from './pages/About';
-
-// Map and chart pages pull in Leaflet and Recharts; load them only when visited
-const MapPage = lazy(() => import('./pages/MapPage'));
-const Insights = lazy(() => import('./pages/Insights'));
-const Result = lazy(() => import('./pages/Result'));
-// Three.js mosquito models; split out so other pages never download them
-const Species = lazy(() => import('./pages/Species'));
 
 function App() {
   return (
@@ -19,13 +8,8 @@ function App() {
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Home />} />
-          <Route path="sense" element={<Sense />} />
-          <Route path="map" element={<MapPage />} />
-          <Route path="insights" element={<Insights />} />
-          <Route path="species" element={<Species />} />
-          <Route path="science" element={<Science />} />
-          <Route path="about" element={<About />} />
-          <Route path="result/:id" element={<Result />} />
+          {/* Everything lives on one page; old links like /map land back on it */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
     </Router>

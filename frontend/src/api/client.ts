@@ -1,4 +1,4 @@
-import type { Detection, SensorNode, StatsSummary, TimeseriesBucket } from './types';
+import type { Detection, NodeActivity, SensorNode, StatsSummary, TimeseriesBucket } from './types';
 
 export const API_URL = (import.meta.env.VITE_API_URL ?? 'http://localhost:8000').replace(/\/$/, '');
 
@@ -50,6 +50,9 @@ export const api = {
 
   getSummary: (params: { window_hours?: number; online_minutes?: number } = {}, signal?: AbortSignal) =>
     apiGet<StatsSummary>('/api/stats/summary', params, signal),
+
+  getNodeActivity: (params: { window_hours?: number } = {}, signal?: AbortSignal) =>
+    apiGet<NodeActivity[]>('/api/stats/nodes', params, signal),
 
   getTimeseries: (
     params: { hours?: number; bucket_minutes?: number; node_id?: string } = {},

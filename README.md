@@ -20,7 +20,7 @@ Classification         Random Forest with open-set rejection → species or UNKN
         ↓
 Storage                FastAPI + SQLAlchemy + SQLite
         ↓  REST, polled every 5 s
-Dashboard              Leaflet map · KPIs · activity chart · detection details
+Dashboard              one page: map · activity chart · species gallery + 3D · detections
 ```
 
 | Stage | What it does | Code |
@@ -29,7 +29,7 @@ Dashboard              Leaflet map · KPIs · activity chart · detection detail
 | Signal processing | Measures dominant (wingbeat) frequency, harmonic ratio, RMS, peak-to-peak, peak magnitude and spectral energy | [`dsp.py`](backend/app/services/dsp.py) |
 | Classification | Names a species only if every feature is inside the trained range *and* confidence ≥ threshold; otherwise `UNKNOWN` | [`classifier.py`](backend/app/services/classifier.py) |
 | API & storage | Nodes, detections, raw waveform ingestion, dashboard stats | [`backend/app/routes/`](backend/app/routes/) |
-| Dashboard | Live map, insights, latest detections, per-detection result page | [`frontend/src/`](frontend/src/) |
+| Dashboard | Single page: live map with per-place species counts, activity chart, species gallery with 3D models, latest detections | [`frontend/src/`](frontend/src/) |
 | Firmware | ESP32 sketch that captures beam crossings and uploads them | [`firmware/`](firmware/) |
 
 ## Tech stack
@@ -37,7 +37,7 @@ Dashboard              Leaflet map · KPIs · activity chart · detection detail
 - **Hardware:** ESP32, Arduino CLI (C++)
 - **Backend:** Python 3, FastAPI, Uvicorn, SQLAlchemy, SQLite, Pydantic
 - **DSP & ML:** NumPy, SciPy, scikit-learn (Random Forest), joblib
-- **Frontend:** React 19, TypeScript, Vite, Tailwind CSS, Leaflet / React-Leaflet, Recharts
+- **Frontend:** React 19, TypeScript, Vite, Tailwind CSS, Leaflet / React-Leaflet, Recharts, Three.js
 - **Testing:** pytest
 
 ## Run it locally
@@ -82,9 +82,21 @@ cp .env.example .env
 npm run dev
 ```
 
-Open http://localhost:5173. **Map** shows the nodes, sized by detections in the last
-24 hours. **Insights** shows the KPIs, the activity chart and the latest detections;
-click a detection to see its features.
+Open http://localhost:5173. Everything is on one page:
+
+- **Live map**: click any place to see how many mosquitoes it detected and which kinds
+  (Aedes, Culex, Anopheles…), plus its latest detections.
+- **Activity**: detections over time, split by species.
+- **Mosquitoes**: a picture gallery; **Learn more in 3D** opens an interactive
+  Three.js model of each species.
+- **Latest detections**: click one for its wingbeat features.
+
+### Species pictures
+
+Put photos in a `pictures/` folder at the repository root, named after the species,
+e.g. `aedes-aegypti.jpg`, `Culex quinquefasciatus 2.png` or `anopheles_gambiae.webp`.
+They appear in the gallery and the 3D pop-up automatically (restart `npm run dev` after
+adding the folder). Species without a photo show a render of their 3D model.
 
 ### Real hardware
 
@@ -122,6 +134,7 @@ Frontend settings live in `frontend/.env`: `VITE_API_URL` and `VITE_POLL_INTERVA
 | `GET` | `/api/detections/{id}` | One detection |
 | `GET` | `/api/stats/summary` | KPIs over `window_hours` |
 | `GET` | `/api/stats/timeseries` | Counts per time bucket by species |
+| `GET` | `/api/stats/nodes` | Per-place counts by species over `window_hours` |
 
 Timestamps are UTC.
 

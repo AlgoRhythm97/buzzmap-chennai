@@ -47,3 +47,10 @@ export interface TimeseriesBucket {
   total: number;
   by_species: Partial<Record<SpeciesClass, number>>;
 }
+
+export interface NodeActivity {
+  node_id: string;
+  total: number;
+  by_species: Partial<Record<SpeciesClass, number>>;
+  last_detection_at: string | null;
+}
