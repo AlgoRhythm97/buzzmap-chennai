@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 from app.services.dsp import remove_dc_offset, apply_window, extract_features
 from app.services.detector import EnergyDetector
 from scripts.mock_sensor import generate_wingbeat
@@ -30,10 +31,10 @@ def test_extract_features():
     assert features["rms"] > 0
 
 def test_energy_detector():
-    detector = EnergyDetector(threshold_multiplier=3.0, min_event_length=10)
-    
-    # Calibrate with pure noise
-    noise = np.random.normal(0, 0.05, 1000)
+    detector = EnergyDetector(threshold_multiplier=3.0, min_event_length=50)
+
+    # Calibrate with pure noise (seeded so the test is deterministic)
+    noise = np.random.default_rng(0).normal(0, 0.05, 1000)
     detector.calibrate(noise)
     
     # Create signal: noise -> loud event -> noise
@@ -47,3 +48,15 @@ def test_energy_detector():
     # The event should roughly align with our loud_event insertion (indices 400 to 600)
     assert 390 <= start <= 410
     assert 590 <= end <= 610
+
+def test_energy_detector_ignores_pure_noise():
+    detector = EnergyDetector(threshold_multiplier=3.5, min_event_length=100)
+    rng = np.random.default_rng(1)
+    detector.calibrate(rng.normal(0, 0.05, 2000))
+
+    assert detector.detect_events(rng.normal(0, 0.05, 2000)) == []
+
+def test_energy_detector_requires_calibration():
+    detector = EnergyDetector()
+    with pytest.raises(ValueError):
+        detector.detect_events(np.zeros(100))
