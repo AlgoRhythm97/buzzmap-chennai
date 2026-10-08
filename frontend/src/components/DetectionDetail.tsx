@@ -6,7 +6,7 @@ import { usePolling } from '../hooks/usePolling';
 import { SPECIES } from '../lib/display';
 import { picturesFor } from '../lib/pictures';
 import type { MosquitoModelId } from '../three/mosquito-models';
-import { MODEL_FOR_CLASS, SPECIMENS } from '../three/speciesModels';
+import { GENUS_INFO, MODEL_FOR_CLASS, SPECIMENS } from '../three/speciesModels';
 import SpeciesBadge from './SpeciesBadge';
 
 /** Plain-language reason for the classifier's answer. */
@@ -79,6 +79,9 @@ export default function DetectionDetail({ id, nodes, onOpenSpecies }: {
             <img src={picturesFor(specimen.id)[0]?.src} alt={specimen.label} className="aspect-[3/2] w-full object-cover transition-transform group-hover:scale-105" />
             <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent p-3 text-sm">
               <span className="block text-gray-300">Typical member: <span className="italic">{specimen.label}</span></span>
+              <span className="block font-semibold text-warning-amber">
+                Spreads {GENUS_INFO[specimen.detectionClass].diseases.map((x) => x.name).join(' · ')}
+              </span>
               <span className="text-accent-primary">See it in 3D →</span>
             </span>
           </button>

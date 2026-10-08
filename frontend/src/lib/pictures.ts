@@ -1,9 +1,12 @@
 import type { MosquitoModelId } from '../three/mosquito-models';
 
-// Photos dropped into the repository's pictures/ folder, matched to a species by file
-// name: "aedes-aegypti.jpg", "Aedes aegypti 2.png" and "aedes_aegypti_closeup.webp" all
-// belong to Aedes aegypti. Rendered snapshots of the 3D models are the fallback.
-const photos = import.meta.glob<string>('../../../pictures/*.{jpg,jpeg,png,webp,avif,JPG,JPEG,PNG,WEBP}', {
+// Photos dropped into the repository's pictures/ (or Pictures/) folder, matched to a species
+// by file name: "aedes-aegypti.jpg", "Aedes aegypti 2.png" and "aedes_aegypti_closeup.webp"
+// all belong to Aedes aegypti. Rendered snapshots of the 3D models are the fallback.
+const photos = import.meta.glob<string>([
+  '../../../pictures/*.{jpg,jpeg,png,webp,avif,JPG,JPEG,PNG,WEBP}',
+  '../../../Pictures/*.{jpg,jpeg,png,webp,avif,JPG,JPEG,PNG,WEBP}',
+], {
   eager: true,
   query: '?url',
   import: 'default',
