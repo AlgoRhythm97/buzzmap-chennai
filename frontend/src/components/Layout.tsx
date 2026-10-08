@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { Outlet, Link } from 'react-router-dom';
 
 export default function Layout() {
@@ -31,7 +32,10 @@ export default function Layout() {
         </div>
       </header>
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Outlet />
+        {/* Lazy pages load here, so the header stays visible meanwhile */}
+        <Suspense fallback={<p className="text-gray-400">Loading…</p>}>
+          <Outlet />
+        </Suspense>
       </main>
     </div>
   );

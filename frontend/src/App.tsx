@@ -1,12 +1,15 @@
+import { lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import Home from './pages/Home';
 import Sense from './pages/Sense';
-import MapPage from './pages/MapPage';
-import Insights from './pages/Insights';
 import Science from './pages/Science';
 import About from './pages/About';
-import Result from './pages/Result';
+
+// Map and chart pages pull in Leaflet and Recharts; load them only when visited
+const MapPage = lazy(() => import('./pages/MapPage'));
+const Insights = lazy(() => import('./pages/Insights'));
+const Result = lazy(() => import('./pages/Result'));
 
 function App() {
   return (

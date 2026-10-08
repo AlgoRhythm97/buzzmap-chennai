@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { api, parseApiDate } from '../api/client';
 import type { SpeciesClass, StatsSummary, TimeseriesBucket } from '../api/types';
+import RecentDetections from '../components/RecentDetections';
 import { usePolling } from '../hooks/usePolling';
 import { MOSQUITO_SPECIES, SPECIES, SPECIES_ORDER, formatRelative } from '../lib/display';
 
@@ -241,6 +242,8 @@ export default function Insights() {
 
         {summary && <SpeciesBreakdown summary={summary} />}
       </div>
+
+      <RecentDetections />
     </div>
   );
 }
