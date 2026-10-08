@@ -1,6 +1,6 @@
 from sqlalchemy import Column, String, Float, DateTime, Boolean, ForeignKey
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from .timeutils import utc_now
 import uuid
 from .database import Base
 
@@ -19,7 +19,7 @@ class SensorNode(Base):
     longitude = Column(Float, nullable=False)
 
     is_active = Column(Boolean, default=True, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utc_now)
     last_seen_at = Column(DateTime, nullable=True)
 
     detections = relationship("DetectionEvent", back_populates="node")
@@ -28,7 +28,7 @@ class DetectionEvent(Base):
     __tablename__ = "detections"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
-    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    timestamp = Column(DateTime, default=utc_now, index=True)
 
     # Reporting node; nullable so ad-hoc uploads without a registered node still work
     node_id = Column(String, ForeignKey("sensor_nodes.id"), nullable=True, index=True)

@@ -21,7 +21,7 @@ def store_detection(db: Session, detection: DetectionCreate, commit: bool = True
         node = db.get(SensorNode, detection.node_id)
         if node is None:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail=f"Unknown node_id {detection.node_id}; register it via /api/nodes first",
             )
         if data["latitude"] is None:
@@ -49,7 +49,7 @@ def ingest_waveform(db: Session, payload: WaveformIngest) -> List[DetectionEvent
     # Reject unknown nodes even when the capture turns out to contain no events
     if payload.node_id is not None and db.get(SensorNode, payload.node_id) is None:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=f"Unknown node_id {payload.node_id}; register it via /api/nodes first",
         )
 
@@ -57,7 +57,7 @@ def ingest_waveform(db: Session, payload: WaveformIngest) -> List[DetectionEvent
     baseline_len = int(payload.sample_rate * settings.detector_baseline_ms / 1000)
     if len(samples) <= baseline_len * 2:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=f"Capture too short: need more than {baseline_len * 2} samples "
                    f"({settings.detector_baseline_ms} ms of pre-trigger baseline plus signal)",
         )

@@ -1,16 +1,17 @@
 import uuid
-from datetime import datetime, timedelta
+from datetime import timedelta
 from fastapi.testclient import TestClient
 from app.database import SessionLocal
 from app.main import app
 from app.models import DetectionEvent, SensorNode
+from app.timeutils import utc_now
 
 client = TestClient(app)
 
 def _node_with_detections(ages_and_species):
     """Registers a node and inserts detections `age` ago, bypassing the API to control timestamps."""
     node_id = f"CHN-TEST-{uuid.uuid4().hex[:8].upper()}"
-    now = datetime.utcnow()
+    now = utc_now()
     db = SessionLocal()
     try:
         db.add(SensorNode(id=node_id, name="Stats Node", latitude=13.0, longitude=80.2, last_seen_at=now))

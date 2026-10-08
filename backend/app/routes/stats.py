@@ -1,5 +1,5 @@
 from collections import Counter, defaultdict
-from datetime import datetime, timedelta
+from datetime import timedelta
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -8,6 +8,7 @@ from typing import List, Optional
 from ..database import get_db
 from ..models import DetectionEvent, SensorNode
 from ..schemas import StatsSummary, TimeseriesBucket
+from ..timeutils import utc_now
 
 router = APIRouter(prefix="/api/stats", tags=["stats"])
 
@@ -20,7 +21,7 @@ def get_summary(
     """
     Headline KPIs: detection totals, species breakdown over the window and node health.
     """
-    now = datetime.utcnow()
+    now = utc_now()
     window_start = now - timedelta(hours=window_hours)
 
     species_counts = (
@@ -58,7 +59,7 @@ def get_timeseries(
     Every bucket in the range is returned, including empty ones, so charts have no gaps.
     """
     bucket = timedelta(minutes=bucket_minutes)
-    now = datetime.utcnow()
+    now = utc_now()
     # Align buckets to multiples of bucket_minutes since midnight
     midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
     current_start = midnight + ((now - midnight) // bucket) * bucket

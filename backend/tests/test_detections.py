@@ -1,7 +1,8 @@
 import uuid
-from datetime import datetime, timedelta
+from datetime import timedelta
 from fastapi.testclient import TestClient
 from app.main import app
+from app.timeutils import utc_now
 
 client = TestClient(app)
 
@@ -54,7 +55,7 @@ def test_filter_detections_by_node_and_time():
     assert len(results) == 3
     assert all(d["node_id"] == node["id"] for d in results)
 
-    future = (datetime.utcnow() + timedelta(hours=1)).isoformat()
+    future = (utc_now() + timedelta(hours=1)).isoformat()
     assert client.get("/api/detections/", params={"node_id": node["id"], "since": future}).json() == []
     assert len(client.get("/api/detections/", params={"node_id": node["id"], "until": future}).json()) == 3
 
