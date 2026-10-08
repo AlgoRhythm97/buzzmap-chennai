@@ -10,7 +10,8 @@ def test_remove_dc_offset():
     assert np.isclose(np.mean(centered), 0.0)
 
 def test_apply_window():
-    signal = np.ones(100)
+    # Odd length so the window has an exact centre sample
+    signal = np.ones(101)
     windowed = apply_window(signal)
     # Hann window tapers to 0 at the ends
     assert windowed[0] == 0.0
