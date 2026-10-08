@@ -1,6 +1,8 @@
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from datetime import datetime
-from typing import Annotated, Optional
+from typing import Annotated, List, Optional
+
+from .config import settings
 
 Latitude = Annotated[float, Field(ge=-90, le=90)]
 Longitude = Annotated[float, Field(ge=-180, le=180)]
@@ -31,21 +33,14 @@ class SensorNodeResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-class DetectionCreate(BaseModel):
+class LocatedPayload(BaseModel):
     """
-    Schema for validating incoming telemetry from the optical sensors.
+    Common location fields for sensor uploads.
     Coordinates may be omitted when `node_id` is given; the node's location is used.
     """
     node_id: Optional[str] = None
     latitude: Optional[Latitude] = None
     longitude: Optional[Longitude] = None
-    rms: float = Field(ge=0)
-    # Upper bound is well above any insect wingbeat; rejects corrupted packets
-    dominant_freq_hz: float = Field(gt=0, le=5000)
-    peak_magnitude: float = Field(ge=0)
-    peak_to_peak: Optional[float] = Field(default=None, ge=0)
-    harmonic_ratio: Optional[float] = Field(default=None, ge=0)
-    spectral_energy: Optional[float] = Field(default=None, ge=0)
 
     @model_validator(mode="after")
     def require_location(self):
@@ -54,6 +49,18 @@ class DetectionCreate(BaseModel):
         if self.latitude is None and self.node_id is None:
             raise ValueError("either node_id or latitude/longitude is required")
         return self
+
+class DetectionCreate(LocatedPayload):
+    """
+    Schema for validating incoming telemetry (pre-computed features) from the optical sensors.
+    """
+    rms: float = Field(ge=0)
+    # Upper bound is well above any insect wingbeat; rejects corrupted packets
+    dominant_freq_hz: float = Field(gt=0, le=5000)
+    peak_magnitude: float = Field(ge=0)
+    peak_to_peak: Optional[float] = Field(default=None, ge=0)
+    harmonic_ratio: Optional[float] = Field(default=None, ge=0)
+    spectral_energy: Optional[float] = Field(default=None, ge=0)
 
 class DetectionResponse(BaseModel):
     """
@@ -75,3 +82,22 @@ class DetectionResponse(BaseModel):
 
     # Allows Pydantic to read data even if it is not a dict (e.g. from an ORM model)
     model_config = ConfigDict(from_attributes=True)
+
+class WaveformIngest(LocatedPayload):
+    """
+    Schema for a raw optical capture; the server runs detection and DSP itself.
+    The first `detector_baseline_ms` of samples must be pre-trigger ambient noise.
+    """
+    sample_rate: int = Field(ge=1000, le=96000)
+    samples: List[float] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def limit_duration(self):
+        max_samples = settings.max_recording_seconds * self.sample_rate
+        if len(self.samples) > max_samples:
+            raise ValueError(f"capture longer than {settings.max_recording_seconds} s ({max_samples} samples)")
+        return self
+
+class WaveformIngestResponse(BaseModel):
+    events_detected: int
+    detections: List[DetectionResponse]

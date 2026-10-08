@@ -4,42 +4,21 @@ from datetime import datetime
 from typing import List, Optional
 
 from ..database import get_db
-from ..models import DetectionEvent, SensorNode
+from ..models import DetectionEvent
 from ..schemas import DetectionCreate, DetectionResponse
+from ..services.ingestion import store_detection
 
 router = APIRouter(prefix="/api/detections", tags=["detections"])
 
 @router.post("/", response_model=DetectionResponse)
 def create_detection(detection: DetectionCreate, db: Session = Depends(get_db)):
     """
-    Ingest a new detection event from a sensing node.
+    Ingest a new detection event (pre-computed features) from a sensing node.
 
     When `node_id` is given the node must be registered; its coordinates fill in
     any missing latitude/longitude and its `last_seen_at` is refreshed.
     """
-    data = detection.model_dump()
-
-    if detection.node_id is not None:
-        node = db.get(SensorNode, detection.node_id)
-        if node is None:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=f"Unknown node_id {detection.node_id}; register it via /api/nodes first",
-            )
-        if data["latitude"] is None:
-            data["latitude"] = node.latitude
-            data["longitude"] = node.longitude
-
-    db_event = DetectionEvent(**data)
-    db.add(db_event)
-    db.flush()  # assigns the default timestamp
-
-    if detection.node_id is not None:
-        node.last_seen_at = db_event.timestamp
-
-    db.commit()
-    db.refresh(db_event)
-    return db_event
+    return store_detection(db, detection)
 
 @router.get("/", response_model=List[DetectionResponse])
 def get_detections(
