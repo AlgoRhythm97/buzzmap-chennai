@@ -26,3 +26,8 @@ Thumbs.db
 
 generated/
 temp/
+
+# Local databases and trained model artifacts
+*.db
+*.sqlite3
+backend/models/*.joblib
