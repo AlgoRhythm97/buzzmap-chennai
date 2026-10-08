@@ -11,6 +11,7 @@ __pycache__/
 
 .venv/
 venv/
+buzz_venv/
 
 .pytest_cache/
 .coverage

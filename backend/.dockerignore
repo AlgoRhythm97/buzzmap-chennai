@@ -1,0 +1,8 @@
+# Keep local environments, databases and secrets out of the image
+buzz_venv/
+.venv/
+venv/
+__pycache__/
+.pytest_cache/
+*.db
+.env
